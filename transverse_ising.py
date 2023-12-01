@@ -38,9 +38,11 @@ class VarOfSystem(NamedTuple):
     NumOfSS :int
     NumOfSx :int
     NumOfUnitary :int
-    NumOfAncilla :int
-    NumOfGate :int
+    NumOfAncillaForEncoding :int
+    NumOfGateForEncoding :int
     ValueOfH: float
+    NumOfAncillaForPolynomial: int
+    NumOfGate: int
 
 def GateForXBasis() -> Gate:
     pass
@@ -56,10 +58,10 @@ def construct_G(var_of_system: VarOfSystem) -> Gate:
     """hamiltonianをencodingするブロックを指定する
     Site数がpow(2,N)の値かそうでないかを場合わけして、それぞれの場合でHの値に対応したoracleを作る
     """
-    qc = QuantumCircuit(var_of_system.NumOfGate)
+    qc = QuantumCircuit(var_of_system.NumOfGateForEncoding)
     theta_0 = np.arccos(np.sqrt(1 /(var_of_system.ValueOfH + 1))) 
-    qc.ry(2 * theta_0, var_of_system.NumOfSite + var_of_system.NumOfAncilla -1)
-    for gate in range(var_of_system.NumOfSite, var_of_system.NumOfSite + var_of_system.NumOfAncilla - 1):
+    qc.ry(2 * theta_0, var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding -1)
+    for gate in range(var_of_system.NumOfSite, var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding - 1):
         qc.h(gate)
     Gstate = qc.to_gate()
     return Gstate
@@ -114,15 +116,15 @@ def qc_controlledSS(U_i: int, var_of_system: VarOfSystem) -> Gate:
     qc_forU = QuantumCircuit(var_of_system.NumOfSite)
     qc_forU.rz(-3*np.pi, U_i % var_of_system.NumOfSS)
     qc_forU.rz(-3*np.pi, (U_i+1) % var_of_system.NumOfSS)
-    SSzgate = qc_forU.to_gate().control(var_of_system.NumOfAncilla)
+    SSzgate = qc_forU.to_gate().control(var_of_system.NumOfAncillaForEncoding)
     
     #controlled-SSz gateを作成
-    qc_controlled_U = QuantumCircuit(var_of_system.NumOfGate)
-    qc_controlled_U.append(add_xgate(var_of_system.NumOfGate, PlaceOfXgate(U_i, var_of_system), var_of_system),
-                           list(range(var_of_system.NumOfGate))) 
-    qc_controlled_U.append(SSzgate, list(range(var_of_system.NumOfGate))[::-1])
-    qc_controlled_U.append(add_xgate(var_of_system.NumOfGate, PlaceOfXgate(U_i, var_of_system), var_of_system),
-                           list(range(var_of_system.NumOfGate)))
+    qc_controlled_U = QuantumCircuit(var_of_system.NumOfGateForEncoding)
+    qc_controlled_U.append(add_xgate(var_of_system.NumOfGateForEncoding, PlaceOfXgate(U_i, var_of_system), var_of_system),
+                           list(range(var_of_system.NumOfGateForEncoding))) 
+    qc_controlled_U.append(SSzgate, list(range(var_of_system.NumOfGateForEncoding))[::-1])
+    qc_controlled_U.append(add_xgate(var_of_system.NumOfGateForEncoding, PlaceOfXgate(U_i, var_of_system), var_of_system),
+                           list(range(var_of_system.NumOfGateForEncoding)))
     controlled_SS = qc_controlled_U.to_gate()
     
     return controlled_SS
@@ -140,15 +142,15 @@ def qc_controlledSx(U_i: int, var_of_system: VarOfSystem) -> Gate:
     qc_forSx = QuantumCircuit(var_of_system.NumOfSite)
     qc_forSx.x(U_i % var_of_system.NumOfSx)
     #qc_forSx = QuantumCircuit(var_of_system.NumOfSite)
-    Sxgate = qc_forSx.to_gate().control(var_of_system.NumOfAncilla)
+    Sxgate = qc_forSx.to_gate().control(var_of_system.NumOfAncillaForEncoding)
     
     #controlled-Sx gateを作成
-    qc_controlled_U = QuantumCircuit(var_of_system.NumOfGate)
-    qc_controlled_U.append(add_xgate(var_of_system.NumOfGate, PlaceOfXgate(U_i, var_of_system), var_of_system),
-                           list(range(var_of_system.NumOfGate)))
-    qc_controlled_U.append(Sxgate, list(range(var_of_system.NumOfGate))[::-1])
-    qc_controlled_U.append(add_xgate(var_of_system.NumOfGate, PlaceOfXgate(U_i, var_of_system), var_of_system),
-                           list(range(var_of_system.NumOfGate)))
+    qc_controlled_U = QuantumCircuit(var_of_system.NumOfGateForEncoding)
+    qc_controlled_U.append(add_xgate(var_of_system.NumOfGateForEncoding, PlaceOfXgate(U_i, var_of_system), var_of_system),
+                           list(range(var_of_system.NumOfGateForEncoding)))
+    qc_controlled_U.append(Sxgate, list(range(var_of_system.NumOfGateForEncoding))[::-1])
+    qc_controlled_U.append(add_xgate(var_of_system.NumOfGateForEncoding, PlaceOfXgate(U_i, var_of_system), var_of_system),
+                           list(range(var_of_system.NumOfGateForEncoding)))
     controlled_Sx = qc_controlled_U.to_gate()
     
     return controlled_Sx
@@ -156,24 +158,24 @@ def qc_controlledSx(U_i: int, var_of_system: VarOfSystem) -> Gate:
 def EncodingHamiltonian(var_of_system: VarOfSystem) -> Gate:
     """HamiltonianをUnitary matrixにencodeする"""
 
-    HamiltonianEncodedGate = QuantumCircuit(var_of_system.NumOfGate)
+    HamiltonianEncodedGate = QuantumCircuit(var_of_system.NumOfGateForEncoding)
     #encoding hamiltonian
     #implement an oracle
-    HamiltonianEncodedGate.append(construct_G(var_of_system), list(range(var_of_system.NumOfGate)))
+    HamiltonianEncodedGate.append(construct_G(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
     
     #encoding unitary matrix
     for U_i in range(var_of_system.NumOfSS):
         HamiltonianEncodedGate.append(qc_controlledSS(U_i, var_of_system), 
-                        list(range(var_of_system.NumOfGate)))
+                        list(range(var_of_system.NumOfGateForEncoding)))
         #print(U_i)
-    for U_i in range(pow(2,var_of_system.NumOfAncilla - 1) , pow(2, var_of_system.NumOfAncilla - 1)  +var_of_system.NumOfSx ):
+    for U_i in range(pow(2,var_of_system.NumOfAncillaForEncoding - 1) , pow(2, var_of_system.NumOfAncillaForEncoding - 1)  +var_of_system.NumOfSx ):
         HamiltonianEncodedGate.append(qc_controlledSx(U_i, var_of_system), 
-                        list(range(var_of_system.NumOfGate)))
+                        list(range(var_of_system.NumOfGateForEncoding)))
         #print(U_i)
     #transform H to exp(iH)
     
     #implement an oracle
-    HamiltonianEncodedGate.append(construct_G(var_of_system).inverse(), list(range(var_of_system.NumOfGate)))
+    HamiltonianEncodedGate.append(construct_G(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
     
     H_EncodedGate = HamiltonianEncodedGate.to_gate()
     
@@ -217,8 +219,10 @@ def AngListForSine(time: float, epsilon: float) -> list[float]:
 def projector(var_of_system: VarOfSystem):
     """左上のブロックを指定して"""
 
-def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, phase: float) -> Gate:
+def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, ang: float) -> Gate:
     """projector-controlled phase-shift operationを行う
+    
+    1番下のqubitがangだけ回すために用意したancilla
     
     Keyword arguments:
     controlled_state: 0-controlledか、1-controlledかを指定する
@@ -226,14 +230,15 @@ def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, phase
     Returns:
     projector-controlled phase-shift operationのGate
     """
-    qc = QuantumCircuit(var_of_system.NumOfGate + 2)
+    NumOfGateForPhaseShiftOperation = var_of_system.NumOfSite + 1
+    qc = QuantumCircuit(NumOfGateForPhaseShiftOperation)
     
     qc.x(0) if controlled_state == 0 else None
-    qc.append(projector(), list(range(var_of_system.NumOfGate)))
+    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation)))
     qc.x(0) if controlled_state == 0 else None
-    qc.rz(-2 * phase, 0)
+    qc.rz(-2 * ang, 0)
     qc.x(0) if controlled_state == 0 else None
-    qc.append(projector(), list(range(var_of_system.NumOfGate)))
+    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation)))
     qc.x(0) if controlled_state == 0 else None
     
     phaseshiftgate = qc.to_gate()
@@ -241,7 +246,18 @@ def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, phase
     return phaseshiftgate    
 
 def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[int]) -> Gate:
-    qc = QuantumCircuit(var_of_system.NumOfGate + 2)
+    """cos(tau*a)の近似多項式に多項式変形する
+    
+    一番下のqubitが|0><0|, |1><1|を表現するためのancillaで,下から2番目のqubitがangだけ回すために
+    用意したancilla.
+    
+    Keyword arguments:
+    ans_seq_for_cos: cos(tau*a)の近似多項式をx基底で作るための角度のリスト
+    
+    Returns:
+    cos(tau*a)の近似多項式を作るGate
+    """
+    qc = QuantumCircuit(var_of_system.NumOfSite + var_of_system.NumOfAncillaForPolynomial)
     qc.h(0)
     #|0><0|×U_Φ
     
@@ -253,7 +269,26 @@ def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[int]) -> Gate:
     
 
 def SinGate(var_of_system: VarOfSystem, ans_seq_for_sin: list[int]) -> Gate:
-    pass
+    """sin(tau*a)の近似多項式に多項式変形する
+    
+    一番下のqubitが|0><0|, |1><1|を表現するためのancillaで,下から2番目のqubitがangだけ回すために
+    用意したancilla.
+    
+    Keyword arguments:
+    ans_seq_for_cos: sin(tau*a)の近似多項式をx基底で作るための角度のリスト
+    
+    Returns:
+    sin(tau*a)の近似多項式を作るGate
+    """ 
+    qc = QuantumCircuit(var_of_system.NumOfSite + var_of_system.NumOfAncillaForPolynomial)
+    qc.h(0)
+    #|0><0|×U_Φ
+    
+    #|1><1|×U_-Φ
+    
+    qc.h(0)
+    sin_gate = qc.to_gate()
+    return sin_gate
 
 
 def main():
@@ -264,10 +299,12 @@ def main():
     var_of_system.NumOfSS = var_of_system.NumOfSite
     var_of_system.NumOfSx = var_of_system.NumOfSite
     var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
-    var_of_system.NumOfAncilla = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
-    var_of_system.NumOfGate = var_of_system.NumOfSite + var_of_system.NumOfAncilla
+    var_of_system.NumOfAncillaForEncoding = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
+    var_of_system.NumOfGateForEncoding = var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding
+    var_of_system.NumOfAncillaForPolynomial = 4
+    var_of_system.NumOfGate = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial
     
-    MainGate = QuantumCircuit(var_of_system.NumOfGate + 4)
+    MainGate = QuantumCircuit(var_of_system.NumOfGate)
     
     #Hamiltonianをexp(iHt)に多項式変形する
     start_time = 0.0
@@ -284,7 +321,8 @@ def main():
         #exp(iHt)/2を作る
     
         #exp(iHt)に増幅させる
-    
+
+        #測定
     
 if __name__ == '__main__':
     main()
