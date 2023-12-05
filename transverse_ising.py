@@ -233,13 +233,13 @@ def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, ang: 
     NumOfGateForPhaseShiftOperation = var_of_system.NumOfSite + 1
     qc = QuantumCircuit(NumOfGateForPhaseShiftOperation)
     
-    qc.x(0) if controlled_state == 0 else None
-    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation)))
-    qc.x(0) if controlled_state == 0 else None
-    qc.rz(-2 * ang, 0)
-    qc.x(0) if controlled_state == 0 else None
-    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation)))
-    qc.x(0) if controlled_state == 0 else None
+    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
+    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation - 1)))
+    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
+    qc.rz(-2 * ang, NumOfGateForPhaseShiftOperation - 1)
+    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
+    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation - 1)))
+    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
     
     phaseshiftgate = qc.to_gate()
     
