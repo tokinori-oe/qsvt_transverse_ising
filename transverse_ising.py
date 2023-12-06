@@ -171,7 +171,7 @@ def EncodingHamiltonian(var_of_system: VarOfSystem) -> Gate:
     for U_i in range(pow(2,var_of_system.NumOfAncillaForEncoding - 1) , pow(2, var_of_system.NumOfAncillaForEncoding - 1)  +var_of_system.NumOfSx ):
         HamiltonianEncodedGate.append(qc_controlledSx(U_i, var_of_system), 
                         list(range(var_of_system.NumOfGateForEncoding)))
-        #print(U_i)
+        
     #transform H to exp(iH)
     
     #implement an oracle
@@ -371,10 +371,14 @@ def main():
         ang_seq_for_sin = AngListForSine(time, epsilon)
     
         #exp(iHt)/2を作る
-    
+        
         #exp(iHt)に増幅させる
-
+        
         #測定
+        statevec_sim = Aer.get_backend('statevector_simulator')
+        job = execute(MainGate, statevec_sim)
+        result = job.result()
+        resultarr = np.array(result.get_statevector(MainGate))
     
 if __name__ == '__main__':
     main()
