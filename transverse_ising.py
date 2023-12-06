@@ -60,7 +60,7 @@ def construct_G(var_of_system: VarOfSystem) -> Gate:
     """
     qc = QuantumCircuit(var_of_system.NumOfGateForEncoding)
     theta_0 = np.arccos(np.sqrt(1 /(var_of_system.ValueOfH + 1))) 
-    qc.ry(2 * theta_0, var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding -1)
+    qc.ry(2 * theta_0, var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding - 1)
     for gate in range(var_of_system.NumOfSite, var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding - 1):
         qc.h(gate)
     Gstate = qc.to_gate()
@@ -216,8 +216,22 @@ def AngListForSine(time: float, epsilon: float) -> list[float]:
     return ang_seq
 
 
-def projector(var_of_system: VarOfSystem):
-    """左上のブロックを指定して"""
+def projector(var_of_system: VarOfSystem) -> Gate:
+    """1番下のancilla以外が左上のブロックを表す状態ならばそのancillaを反転させるようなGateを作る
+    
+    1番下のqubitがcontrollされるqubit
+    """
+    NumOfGateForProjector =  var_of_system.NumOfAncillaForEncoding + 1
+    qc = QuantumCircuit(NumOfGateForProjector)
+    
+    for i in range(NumOfGateForProjector - 1):
+        qc.x(i)
+    qc.mct(list(range(NumOfGateForProjector - 1)), NumOfGateForProjector - 1)
+    for i in range(NumOfGateForProjector - 1):
+        qc.x(i)
+    
+    Projector = qc.to_gate()
+    return Projector
 
 def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, ang: float) -> Gate:
     """projector-controlled phase-shift operationを行う
@@ -230,22 +244,51 @@ def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, ang: 
     Returns:
     projector-controlled phase-shift operationのGate
     """
-    NumOfGateForPhaseShiftOperation = var_of_system.NumOfSite + 1
+    ang = -ang if controlled_state == 1 else None
+    NumOfGateForPhaseShiftOperation = var_of_system.NumOfGateForEncoding + 1
     qc = QuantumCircuit(NumOfGateForPhaseShiftOperation)
     
-    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
-    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation - 1)))
-    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
+    qc.append(projector(var_of_system), list(range(var_of_system.NumOfSite, NumOfGateForPhaseShiftOperation)))
     qc.rz(-2 * ang, NumOfGateForPhaseShiftOperation - 1)
-    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
-    qc.append(projector(), list(range(NumOfGateForPhaseShiftOperation - 1)))
-    qc.x(NumOfGateForPhaseShiftOperation - 1) if controlled_state == 0 else None
+    qc.append(projector(var_of_system), list(range(var_of_system.NumOfSite, NumOfGateForPhaseShiftOperation)))
     
     phaseshiftgate = qc.to_gate()
     
-    return phaseshiftgate    
+    return phaseshiftgate
 
-def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[int]) -> Gate:
+def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq_for_cos: list[float]) -> Gate:
+    """一つのancillaにコントロールされたU_phiのGateを作る
+        
+    Keyword arguments:
+    controlled_state: 0...U_phi, 1...U_-phiを作る
+    ans_seq_for_cos: cos(tau*a)の近似多項式をx基底で作るための角度のリスト
+        
+    Returns:
+    一つのancillaにコントロールされたU_(-)phiのGate
+    """
+    NumOfGateForUphi = var_of_system.NumOfGateForEncoding + 1
+    qc = QuantumCircuit(NumOfGateForUphi)
+        
+    if len(ang_seq_for_cos) % 2 == 0:
+        for ang_i, ang in enumerate(ang_seq_for_cos):
+            qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
+            if ang_i == 0:
+                qc.append(EncodingHamiltonian.inverse(), list(range(var_of_system.NumOfAncillaForEncoding)))
+            else:
+                qc.append(EncodingHamiltonian, list(range(var_of_system.NumOfAncillaForEncoding)))
+    else:
+        for ang_i, ang in enumerate(ang_seq_for_cos):
+            qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
+            if ang_i == 0:
+                qc.append(EncodingHamiltonian, list(range(var_of_system.NumOfAncillaForEncoding)))
+            else:
+                qc.append(EncodingHamiltonian.inverse(), list(range(var_of_system.NumOfAncillaForEncoding)))
+    Ugate = qc.to_gate().control(1)
+        
+    return Ugate  
+        
+
+def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[float]) -> Gate:
     """cos(tau*a)の近似多項式に多項式変形する
     
     一番下のqubitが|0><0|, |1><1|を表現するためのancillaで,下から2番目のqubitがangだけ回すために
@@ -257,18 +300,23 @@ def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[int]) -> Gate:
     Returns:
     cos(tau*a)の近似多項式を作るGate
     """
-    qc = QuantumCircuit(var_of_system.NumOfSite + var_of_system.NumOfAncillaForPolynomial)
-    qc.h(0)
+    
+    NumOfGateForCosGate = var_of_system.NumOfGateForEncoding + 2    
+    qc = QuantumCircuit(NumOfGateForCosGate)
+    qc.h(NumOfGateForCosGate - 1)
     #|0><0|×U_Φ
-    
+    qc.append(Construct_U_phi(var_of_system, 0, ang_seq_for_cos), list(range(NumOfGateForCosGate)))
     #|1><1|×U_-Φ
+    qc.x(NumOfGateForCosGate - 1)
+    qc.append(Construct_U_phi(var_of_system, 1, ang_seq_for_cos), list(range(NumOfGateForCosGate)))
+    qc.x(NumOfGateForCosGate - 1)
     
-    qc.h(0)
+    qc.h(NumOfGateForCosGate - 1)
     cos_gate = qc.to_gate()
     return cos_gate
     
 
-def SinGate(var_of_system: VarOfSystem, ans_seq_for_sin: list[int]) -> Gate:
+def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     """sin(tau*a)の近似多項式に多項式変形する
     
     一番下のqubitが|0><0|, |1><1|を表現するためのancillaで,下から2番目のqubitがangだけ回すために
@@ -280,13 +328,17 @@ def SinGate(var_of_system: VarOfSystem, ans_seq_for_sin: list[int]) -> Gate:
     Returns:
     sin(tau*a)の近似多項式を作るGate
     """ 
-    qc = QuantumCircuit(var_of_system.NumOfSite + var_of_system.NumOfAncillaForPolynomial)
-    qc.h(0)
+    NumOfGateForSinGate = var_of_system.NumOfGateForEncoding + 2    
+    qc = QuantumCircuit(NumOfGateForSinGate)
+    qc.h(NumOfGateForSinGate - 1)
     #|0><0|×U_Φ
-    
+    qc.append(Construct_U_phi(var_of_system, 0, ang_seq_for_sin), list(range(NumOfGateForSinGate)))
     #|1><1|×U_-Φ
+    qc.x(NumOfGateForSinGate - 1)
+    qc.append(Construct_U_phi(var_of_system, 1, ang_seq_for_sin), list(range(NumOfGateForSinGate)))
+    qc.x(NumOfGateForSinGate - 1)
     
-    qc.h(0)
+    qc.h(NumOfGateForSinGate - 1)
     sin_gate = qc.to_gate()
     return sin_gate
 
