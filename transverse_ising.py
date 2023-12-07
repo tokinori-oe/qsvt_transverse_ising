@@ -195,6 +195,7 @@ def AngListForCos(time: float, epsilon: float) -> list[float]:
     poly = TargetPolynomial(coef_cos)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
     ang_seq = [ang for sublist in ang_seq for ang in sublist]
+    ang_seq = [ang - (np.pi/4) if (ang_i == 0 or ang_i == len(ang_seq) - 1) else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq)]
     
     return ang_seq
 
@@ -212,6 +213,7 @@ def AngListForSine(time: float, epsilon: float) -> list[float]:
     poly = TargetPolynomial(coef_sin)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
     ang_seq = [ang for sublist in ang_seq for ang in sublist]
+    ang_seq = [ang - (np.pi/4) if (ang_i == 0 or ang_i == len(ang_seq) - 1) else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq)]
     
     return ang_seq
 
@@ -270,12 +272,13 @@ def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq_f
     qc = QuantumCircuit(NumOfGateForUphi)
         
     if len(ang_seq_for_cos) % 2 == 0:
-        for ang_i, ang in enumerate(ang_seq_for_cos):
+        for ang_i, ang in enumerate(ang_seq_for_cos[:-1]):
             qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             if ang_i == 0:
                 qc.append(EncodingHamiltonian.inverse(), list(range(var_of_system.NumOfAncillaForEncoding)))
             else:
                 qc.append(EncodingHamiltonian, list(range(var_of_system.NumOfAncillaForEncoding)))
+        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq_for_cos[len(ang_seq_for_cos) - 1]), list(range(NumOfGateForUphi)))
     else:
         for ang_i, ang in enumerate(ang_seq_for_cos):
             qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
@@ -283,6 +286,7 @@ def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq_f
                 qc.append(EncodingHamiltonian, list(range(var_of_system.NumOfAncillaForEncoding)))
             else:
                 qc.append(EncodingHamiltonian.inverse(), list(range(var_of_system.NumOfAncillaForEncoding)))
+        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq_for_cos[len(ang_seq_for_cos) - 1]), list(range(NumOfGateForUphi)))
     Ugate = qc.to_gate().control(1)
         
     return Ugate  
@@ -312,7 +316,7 @@ def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[float]) -> Gate:
     qc.x(NumOfGateForCosGate - 1)
     
     qc.h(NumOfGateForCosGate - 1)
-    cos_gate = qc.to_gate()
+    cos_gate = qc.to_gate().control(1)
     return cos_gate
     
 
@@ -339,9 +343,29 @@ def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     qc.x(NumOfGateForSinGate - 1)
     
     qc.h(NumOfGateForSinGate - 1)
-    sin_gate = qc.to_gate()
+    sin_gate = qc.to_gate().control(1)
     return sin_gate
 
+def ExpOverTwoGate(var_of_system: VarOfSystem) -> Gate:
+    """exp(-itH)/2をつくる
+    
+    NumOfAncillaForPolynomialは5qubitあって、小さいindexから順に、cosGateを作るための2qubit,
+    sinGateを作るための2qubit, 線型結合させるための1qubitで並ぶ
+    """
+    NumOfGateForExpOverTwoGate = var_of_system.NumOfGateForEncoding + 5
+    qc = QuantumCircuit(NumOfGateForExpOverTwoGate)
+    
+    qc.h(NumOfGateForExpOverTwoGate - 1)
+    #CosGate
+    qc.append(CosGate, list(range(NumOfGateForExpOverTwoGate)))
+    #SinGate(-isinをEncodingする)
+    qc.x(NumOfGateForExpOverTwoGate - 1)
+    qc.append(SinGate, list(range(NumOfGateForExpOverTwoGate)))
+    qc.x(NumOfGateForExpOverTwoGate - 1)
+
+    qc.h(NumOfGateForExpOverTwoGate - 1)
+
+    pass
 
 def main():
     #系の設定
@@ -353,7 +377,7 @@ def main():
     var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
     var_of_system.NumOfAncillaForEncoding = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
     var_of_system.NumOfGateForEncoding = var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding
-    var_of_system.NumOfAncillaForPolynomial = 4
+    var_of_system.NumOfAncillaForPolynomial = 5
     var_of_system.NumOfGate = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial
     
     MainGate = QuantumCircuit(var_of_system.NumOfGate)
@@ -370,10 +394,11 @@ def main():
         ang_seq_for_cos = AngListForCos(time, epsilon)
         ang_seq_for_sin = AngListForSine(time, epsilon)
     
-        #exp(iHt)/2を作る
+        #exp(-iHt)/2を作る
+        MainGate.append(ExpOverTwoGate, list(range(var_of_system.NumOfGate)))
         
-        #exp(iHt)に増幅させる
-        
+        #exp(-iHt)に増幅させる
+
         #測定
         statevec_sim = Aer.get_backend('statevector_simulator')
         job = execute(MainGate, statevec_sim)

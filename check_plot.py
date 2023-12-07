@@ -63,8 +63,8 @@ def main():
         main_qc = QuantumCircuit(1)
     
         main_qc.h(0)
-        #main_qc.append(QSPGateForCos(time, epsilon, theta), [0])
-        main_qc.append(QSPGateForSine(time, epsilon, theta), [0])
+        main_qc.append(QSPGateForCos(time, epsilon, theta), [0])
+        #main_qc.append(QSPGateForSine(time, epsilon, theta), [0])
         main_qc.h(0)
     
         #計測
