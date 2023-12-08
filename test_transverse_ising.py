@@ -8,6 +8,19 @@ from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit.providers.ibmq import least_busy
 
 
+def setting_var_of_system(NumOfSite: int, ValueOfH: float) -> VarOfSystem:
+    """系の変数を与える"""
+    var_of_system = VarOfSystem
+    var_of_system.NumOfSite =  NumOfSite
+    var_of_system.ValueOfH = ValueOfH
+    var_of_system.NumOfSS = var_of_system.NumOfSite
+    var_of_system.NumOfSx = var_of_system.NumOfSite
+    var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
+    var_of_system.NumOfAncilla = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
+    var_of_system.NumOfGate = var_of_system.NumOfSite + var_of_system.NumOfAncilla
+    
+    return var_of_system
+
 def Zgate() -> np.ndarray:
     """Zgateの行列を返す"""
     return np.array([[1,0], [0, -1]])
@@ -48,19 +61,6 @@ def Identity_matrixFortest(var_of_system: VarOfSystem) -> np.ndarray:
     for i in range(var_of_system.NumOfSite):
         S = np.kron(S,Igate())
     return S
-
-def setting_var_of_system(NumOfSite: int, ValueOfH: float) -> VarOfSystem:
-    """系の変数を与える"""
-    var_of_system = VarOfSystem
-    var_of_system.NumOfSite =  NumOfSite
-    var_of_system.ValueOfH = ValueOfH
-    var_of_system.NumOfSS = var_of_system.NumOfSite
-    var_of_system.NumOfSx = var_of_system.NumOfSite
-    var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
-    var_of_system.NumOfAncilla = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
-    var_of_system.NumOfGate = var_of_system.NumOfSite + var_of_system.NumOfAncilla
-    
-    return var_of_system
 
 def AnswerMatrix(var_of_system: VarOfSystem) -> np.ndarray:
     """encodingされたhamiltonianのanswerを出力する"""
@@ -253,4 +253,3 @@ def test_Identity():
     encoded_matrix *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + (pow(2, var_of_system.NumOfAncilla) - var_of_system.NumOfUnitary))
     answer = sum(Identity_matrixFortest(var_of_system) for _ in range(var_of_system.NumOfSite * 2))
     assert np.allclose(encoded_matrix, answer)
-    

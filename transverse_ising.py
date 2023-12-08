@@ -343,6 +343,8 @@ def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     qc.x(NumOfGateForSinGate - 1)
     
     qc.h(NumOfGateForSinGate - 1)
+    
+    qc.rz(-2 * (-3*np.pi/2), var_of_system.NumOfSite)
     sin_gate = qc.to_gate().control(1)
     return sin_gate
 
