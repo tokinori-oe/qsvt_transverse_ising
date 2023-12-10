@@ -44,9 +44,6 @@ class VarOfSystem(NamedTuple):
     NumOfAncillaForPolynomial: int
     NumOfGate: int
 
-def GateForXBasis() -> Gate:
-    pass
-
 def CheckLessThan2ToTheN(N: int) -> int:
     """2^answerがN以上になる最小のanswerを出力する"""
     answer = 0
@@ -180,6 +177,8 @@ def EncodingHamiltonian(var_of_system: VarOfSystem) -> Gate:
     H_EncodedGate = HamiltonianEncodedGate.to_gate()
     
     return H_EncodedGate
+
+"---------------------------------------------------------------------------------------------------------------------------------------------------"
 
 def AngListForCos(time: float, epsilon: float) -> list[float]:
     """cos(tx)を近似した多項式に対応する角度のリストを求める
