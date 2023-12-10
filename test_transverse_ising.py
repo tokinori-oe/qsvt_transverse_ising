@@ -1,6 +1,9 @@
 import pytest
 from transverse_ising import VarOfSystem, CheckLessThan2ToTheN, EncodingHamiltonian, qc_controlledSS, qc_controlledSx, construct_G
+from transverse_ising import AngListForCos, AngListForSine
 import numpy as np
+import numpy.linalg as LA
+import scipy.special
 
 #import qiskit
 from qiskit import IBMQ, Aer, transpile, execute
@@ -253,3 +256,36 @@ def test_Identity():
     encoded_matrix *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + (pow(2, var_of_system.NumOfAncilla) - var_of_system.NumOfUnitary))
     answer = sum(Identity_matrixFortest(var_of_system) for _ in range(var_of_system.NumOfSite * 2))
     assert np.allclose(encoded_matrix, answer)
+
+def TransformEigenValueToCosOfChebyShev(LenOfAngSeq: int, eig_value: float, time: float) -> float:
+        TransformedEigenValue = scipy.special(0, time)
+   
+def TransformMatrixToCosOfChebyShev(LenOfAngSeq: int, encoded_matrix: np.ndarray, time: float) -> np.ndarray:
+    TransformedMatrix = np.zeros(encoded_matrix.shape)
+    eig_values, eig_vecs = LA.eig(encoded_matrix)
+    
+    for eig_i, eig_value in enumerate(eig_values):
+        TransformedMatrix += TransformEigenValueToCosOfChebyShev(LenOfAngSeq, eig_value) * np.dot(eig_vecs[eig_i].T, eig_vecs[eig_i])
+        
+    return TransformedMatrix
+        
+def TransformEigenValueToSinOfChebyShev(LenOfAngSeq: int, eig_value: float, time: float) ->float:
+    pass
+    
+def TransformMatrixToSinOfChebyShev(LenOfAngSeq: int, encoded_matrix: np.ndarray, time: float) -> np.ndarray:
+    TransformedMatrix = np.zeros(encoded_matrix.shape)
+    eig_values, eig_vecs = LA.eig(encoded_matrix)
+    
+    for eig_i, eig_value in enumerate(eig_values):
+        TransformedMatrix += TransformEigenValueToSinOfChebyShev(LenOfAngSeq, eig_value) * np.dot(eig_vecs[eig_i].T, eig_vecs[eig_i])
+        
+    return TransformedMatrix
+
+def test_QSVTAndCosOfChebyshev():
+    pass
+
+def test_QSVTAndSinOfChebyshev():
+    pass
+
+def test_QSVTAndMinusISinOfChebyshev():
+    pass
