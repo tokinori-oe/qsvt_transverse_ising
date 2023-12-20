@@ -347,7 +347,7 @@ def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     sin_gate = qc.to_gate().control(1)
     return sin_gate
 
-def ExpOverTwoGate(var_of_system: VarOfSystem) -> Gate:
+def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_seq_for_sin: list[float]) -> Gate:
     """exp(-itH)/2をつくる
     
     NumOfAncillaForPolynomialは5qubitあって、小さいindexから順に、cosGateを作るための2qubit,
@@ -358,10 +358,10 @@ def ExpOverTwoGate(var_of_system: VarOfSystem) -> Gate:
     
     qc.h(NumOfGateForExpOverTwoGate - 1)
     #CosGate
-    qc.append(CosGate, list(range(NumOfGateForExpOverTwoGate)))
+    qc.append(CosGate(var_of_system, ang_seq_for_cos), list(range(NumOfGateForExpOverTwoGate)))
     #SinGate(-isinをEncodingする)
     qc.x(NumOfGateForExpOverTwoGate - 1)
-    qc.append(SinGate, list(range(NumOfGateForExpOverTwoGate)))
+    qc.append(SinGate(var_of_system, ang_seq_for_sin), list(range(NumOfGateForExpOverTwoGate)))
     qc.x(NumOfGateForExpOverTwoGate - 1)
 
     qc.h(NumOfGateForExpOverTwoGate - 1)
@@ -378,8 +378,6 @@ def main():
     var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
     var_of_system.NumOfAncillaForEncoding = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
     var_of_system.NumOfGateForEncoding = var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding
-    var_of_system.NumOfAncillaForPolynomial = 5
-    var_of_system.NumOfGate = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial
     
     MainGate = QuantumCircuit(var_of_system.NumOfGate)
     
@@ -396,7 +394,7 @@ def main():
         ang_seq_for_sin = AngListForSine(time, epsilon)
     
         #exp(-iHt)/2を作る
-        MainGate.append(ExpOverTwoGate, list(range(var_of_system.NumOfGate)))
+        MainGate.append(ExpOverTwoGate(var_of_system, ang_seq_for_cos, ang_seq_for_sin), list(range(var_of_system.NumOfGate)))
         
         #exp(-iHt)に増幅させる
 
