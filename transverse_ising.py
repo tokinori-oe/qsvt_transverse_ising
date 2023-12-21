@@ -230,7 +230,7 @@ def projector(var_of_system: VarOfSystem) -> Gate:
     
     for i in range(NumOfGateForProjector - 1):
         qc.x(i)
-    qc.mct(list(range(NumOfGateForProjector - 1)), NumOfGateForProjector - 1)
+    qc.mcx(list(range(NumOfGateForProjector - 1)), NumOfGateForProjector - 1)
     for i in range(NumOfGateForProjector - 1):
         qc.x(i)
     
@@ -277,17 +277,17 @@ def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq_f
         for ang_i, ang in enumerate(ang_seq_for_cos[:-1]):
             qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             if ang_i == 0:
-                qc.append(EncodingHamiltonian.inverse(), list(range(var_of_system.NumOfAncillaForEncoding)))
+                qc.append(EncodingHamiltonian(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
             else:
-                qc.append(EncodingHamiltonian, list(range(var_of_system.NumOfAncillaForEncoding)))
+                qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
         qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq_for_cos[len(ang_seq_for_cos) - 1]), list(range(NumOfGateForUphi)))
     else:
         for ang_i, ang in enumerate(ang_seq_for_cos):
             qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             if ang_i == 0:
-                qc.append(EncodingHamiltonian, list(range(var_of_system.NumOfAncillaForEncoding)))
+                qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
             else:
-                qc.append(EncodingHamiltonian.inverse(), list(range(var_of_system.NumOfAncillaForEncoding)))
+                qc.append(EncodingHamiltonian(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
         qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq_for_cos[len(ang_seq_for_cos) - 1]), list(range(NumOfGateForUphi)))
     Ugate = qc.to_gate().control(1)
         
@@ -353,7 +353,7 @@ def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     qc.h(NumOfGateForSinGate - 1)
     
     qc.rz(-2 * (-3*np.pi/2), var_of_system.NumOfSite)
-    sin_gate = qc.to_gate().control(1)
+    sin_gate = qc.to_gate()
     return sin_gate
 
 def ControlledSinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
@@ -375,10 +375,11 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
     qc.h(NumOfGateForExpOverTwoGate - 1)
     #CosGate
     #CosGateのancillaは3つだから違う,SinGateも同様に違う
-    qc.append(CosGate(var_of_system, ang_seq_for_cos), list(range(NumOfGateForExpOverTwoGate)))
+    qc.append(ControlledCosGate(var_of_system, ang_seq_for_cos), list(range(var_of_system.NumOfGateForEncoding + 2)) + [NumOfGateForExpOverTwoGate - 1])
     #SinGate(-isinをEncodingする)
     qc.x(NumOfGateForExpOverTwoGate - 1)
-    qc.append(SinGate(var_of_system, ang_seq_for_sin), list(range(NumOfGateForExpOverTwoGate)))
+    qc.append(ControlledSinGate(var_of_system, ang_seq_for_sin), list(range(var_of_system.NumOfGateForEncoding)) +
+              list(range(var_of_system.NumOfGateForEncoding + 2, var_of_system.NumOfGateForEncoding + 4)) + [NumOfGateForExpOverTwoGate - 1])
     qc.x(NumOfGateForExpOverTwoGate - 1)
 
     qc.h(NumOfGateForExpOverTwoGate - 1)
@@ -405,7 +406,8 @@ def main():
     start_time = 0.0
     end_time = 5.0
     time_step = 0.1 / 6.0
-    time_list = np.linspace(start_time, end_time, num = int((end_time - start_time) / time_step) + 1) 
+    #time_list = np.linspace(start_time, end_time, num = int((end_time - start_time) / time_step) + 1) 
+    time_list = [1.0]
     epsilon = 0.01
     
     for time in time_list:
@@ -423,6 +425,7 @@ def main():
         job = execute(MainGate, statevec_sim)
         result = job.result()
         resultarr = np.array(result.get_statevector(MainGate))
+        print(resultarr.shape)
     
 if __name__ == '__main__':
     main()

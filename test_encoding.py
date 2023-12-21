@@ -13,8 +13,8 @@ from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 def setting_var_of_system(NumOfSite: int, ValueOfH: float) -> VarOfSystem:
     """系の変数を与える"""
     var_of_system = VarOfSystem
-    var_of_system.NumOfSite = 3
-    var_of_system.ValueOfH = 1.0
+    var_of_system.NumOfSite = NumOfSite
+    var_of_system.ValueOfH = ValueOfH
     var_of_system.NumOfSS = var_of_system.NumOfSite
     var_of_system.NumOfSx = var_of_system.NumOfSite
     var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
@@ -368,7 +368,7 @@ def test_QSVTAndCosOfChebyshev(NumOfSite: int, ValueOfH: float, time: float, eps
     NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
     qc = QuantumCircuit(NumOfGateForTestCos)
     
-    qc.append(CosGate(var_of_system, AngListForCos(var_of_system, time, epsilon)))
+    qc.append(CosGate(var_of_system, AngListForCos(var_of_system, time, epsilon)), list(range(NumOfGateForTestCos)))
     backend = Aer.get_backend('unitary_simulator')
     job = execute(qc, backend)
     result = job.result()
