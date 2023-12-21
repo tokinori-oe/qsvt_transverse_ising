@@ -180,7 +180,7 @@ def EncodingHamiltonian(var_of_system: VarOfSystem) -> Gate:
 
 "---------------------------------------------------------------------------------------------------------------------------------------------------"
 
-def AngListForCos(time: float, epsilon: float) -> list[float]:
+def AngListForCos(var_of_system: VarOfSystem, time: float, epsilon: float) -> list[float]:
     """cos(tx)を近似した多項式に対応する角度のリストを求める
     
     Keyword arguments:
@@ -190,6 +190,8 @@ def AngListForCos(time: float, epsilon: float) -> list[float]:
     Returns:
     cos(tx)を近似した多項式に対応する角度のリスト
     """
+    time *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+                    (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     coef_cos = PolyCosineTX().generate(tau = time, epsilon = epsilon)
     poly = TargetPolynomial(coef_cos)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
@@ -198,7 +200,7 @@ def AngListForCos(time: float, epsilon: float) -> list[float]:
     
     return ang_seq
 
-def AngListForSine(time: float, epsilon: float) -> list[float]:
+def AngListForSine(var_of_system: VarOfSystem, time: float, epsilon: float) -> list[float]:
     """isin(tx)を近似した多項式に対応する角度のリストを求める
     
     Keyword arguments:
@@ -208,6 +210,8 @@ def AngListForSine(time: float, epsilon: float) -> list[float]:
     Returns:
     isin(tx)を近似した多項式に対応する角度のリスト
     """
+    time *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+                    (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     coef_sin = PolySineTX().generate(tau = time, epsilon = epsilon)
     poly = TargetPolynomial(coef_sin)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
