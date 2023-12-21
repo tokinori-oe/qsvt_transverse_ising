@@ -8,7 +8,6 @@ import scipy.special
 #import qiskit
 from qiskit import IBMQ, Aer, transpile, execute
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
-from qiskit.providers.ibmq import least_busy
 
 
 def setting_var_of_system(NumOfSite: int, ValueOfH: float) -> VarOfSystem:
@@ -369,7 +368,7 @@ def test_QSVTAndCosOfChebyshev(NumOfSite: int, ValueOfH: float, time: float, eps
     NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
     qc = QuantumCircuit(NumOfGateForTestCos)
     
-    qc.append(CosGate(var_of_system, AngListForCos(time, epsilon)))
+    qc.append(CosGate(var_of_system, AngListForCos(var_of_system, time, epsilon)))
     backend = Aer.get_backend('unitary_simulator')
     job = execute(qc, backend)
     result = job.result()
@@ -414,7 +413,7 @@ def test_QSVTAndMinusISinOfChebyshev(NumOfSite: int, ValueOfH: float, time: floa
     NumOfGateForTestSin = var_of_system.NumOfGateForEncoding + 2
     qc = QuantumCircuit(NumOfGateForTestSin)
     
-    qc.append(CosGate(var_of_system, AngListForSine(time, epsilon)))
+    qc.append(SinGate(var_of_system, AngListForSine(var_of_system, time, epsilon)))
     backend = Aer.get_backend('unitary_simulator')
     job = execute(qc, backend)
     result = job.result()

@@ -11,7 +11,6 @@ from pyqsp.poly import PolyCosineTX, PolySineTX, TargetPolynomial
 #import qiskit
 from qiskit import IBMQ, Aer, transpile, execute
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
-from qiskit.providers.ibmq import least_busy
 from qiskit.circuit.gate import Gate
 
 #import basic plot tools
@@ -249,7 +248,7 @@ def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, ang: 
     Returns:
     projector-controlled phase-shift operationのGate
     """
-    ang = -ang if controlled_state == 1 else None
+    ang = -ang if controlled_state == 1 else ang
     NumOfGateForPhaseShiftOperation = var_of_system.NumOfGateForEncoding + 1
     qc = QuantumCircuit(NumOfGateForPhaseShiftOperation)
     
@@ -319,10 +318,16 @@ def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[float]) -> Gate:
     qc.x(NumOfGateForCosGate - 1)
     
     qc.h(NumOfGateForCosGate - 1)
-    cos_gate = qc.to_gate().control(1)
+    cos_gate = qc.to_gate()
     return cos_gate
     
-
+def ControlledCosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[float]) -> Gate:
+    NumOfGateForCosGate = var_of_system.NumOfGateForEncoding + 2 
+    qc = QuantumCircuit(NumOfGateForCosGate)
+    qc.append(CosGate(var_of_system, ang_seq_for_cos), list(range(NumOfGateForCosGate)))
+    controlled_cos_gate = qc.to_gate().control(1)
+    return controlled_cos_gate
+    
 def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     """sin(tau*a)の近似多項式に多項式変形する
     
@@ -351,6 +356,13 @@ def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     sin_gate = qc.to_gate().control(1)
     return sin_gate
 
+def ControlledSinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
+    NumOfGateForSinGate = var_of_system.NumOfGateForEncoding + 2 
+    qc = QuantumCircuit(NumOfGateForSinGate)
+    qc.append(SinGate(var_of_system, ang_seq_for_sin), list(range(NumOfGateForSinGate)))
+    controlled_sin_gate = qc.to_gate().control(1)
+    return controlled_sin_gate
+
 def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_seq_for_sin: list[float]) -> Gate:
     """exp(-itH)/2をつくる
     
@@ -362,6 +374,7 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
     
     qc.h(NumOfGateForExpOverTwoGate - 1)
     #CosGate
+    #CosGateのancillaは3つだから違う,SinGateも同様に違う
     qc.append(CosGate(var_of_system, ang_seq_for_cos), list(range(NumOfGateForExpOverTwoGate)))
     #SinGate(-isinをEncodingする)
     qc.x(NumOfGateForExpOverTwoGate - 1)
@@ -370,7 +383,8 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
 
     qc.h(NumOfGateForExpOverTwoGate - 1)
 
-    pass
+    exp_over_two_gate = qc.to_gate()
+    return exp_over_two_gate
 
 def main():
     #系の設定
@@ -382,6 +396,8 @@ def main():
     var_of_system.NumOfUnitary = var_of_system.NumOfSS + var_of_system.NumOfSx
     var_of_system.NumOfAncillaForEncoding = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
     var_of_system.NumOfGateForEncoding = var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding
+    var_of_system.NumOfAncillaForPolynomial = 5
+    var_of_system.NumOfGate = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial
     
     MainGate = QuantumCircuit(var_of_system.NumOfGate)
     
@@ -394,8 +410,8 @@ def main():
     
     for time in time_list:
         #cosとsinの関数に対応する角度を求める
-        ang_seq_for_cos = AngListForCos(time, epsilon)
-        ang_seq_for_sin = AngListForSine(time, epsilon)
+        ang_seq_for_cos = AngListForCos(var_of_system, time, epsilon)
+        ang_seq_for_sin = AngListForSine(var_of_system, time, epsilon)
     
         #exp(-iHt)/2を作る
         MainGate.append(ExpOverTwoGate(var_of_system, ang_seq_for_cos, ang_seq_for_sin), list(range(var_of_system.NumOfGate)))
