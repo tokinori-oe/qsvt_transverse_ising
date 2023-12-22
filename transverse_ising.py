@@ -274,21 +274,21 @@ def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq: 
     qc = QuantumCircuit(NumOfGateForUphi)
         
     if len(ang_seq) % 2 == 0:
-        for ang_i, ang in enumerate(ang_seq[:-1]):
-            qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
-            if ang_i == 0:
+        for ang_i, ang in enumerate(ang_seq[::-1]):
+            if ang_i % 2 == 0:
                 qc.append(EncodingHamiltonian(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
+                qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             else:
                 qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
-        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq[len(ang_seq) - 1]), list(range(NumOfGateForUphi)))
+                qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
     else:
-        for ang_i, ang in enumerate(ang_seq):
-            qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
-            if ang_i == 0:
+        for ang_i, ang in enumerate(ang_seq[::-1]):
+            if ang_i % 2 == 0:
                 qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
+                qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             else:
                 qc.append(EncodingHamiltonian(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
-        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq[len(ang_seq) - 1]), list(range(NumOfGateForUphi)))
+                qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
     Ugate = qc.to_gate().control(1)
         
     return Ugate  

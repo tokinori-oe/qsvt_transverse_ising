@@ -295,8 +295,8 @@ def TransformMatrixToCosOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
     
     transformed_eig_values = np.array([TransformEigenValueToCosOfChebyShev(epsilon, eig_value, time) for eig_value in eig_values])
     diagonal_matrix = np.diag(transformed_eig_values)
-    print(eig_values)
-    print(transformed_eig_values)
+    #print(eig_values)
+    #print(transformed_eig_values)
     TransformedMatrix = eig_vecs @ diagonal_matrix @ eig_vecs.T
     
     return TransformedMatrix
@@ -434,7 +434,7 @@ def test_QSVTAndMinusISinOfChebyshev(NumOfSite: int, ValueOfH: float, time: floa
 def test_ExpOverTwo():
     pass
 
-"""
+
 def main():
     NumOfSite = 2
     ValueOfH = 1.0
@@ -449,4 +449,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-"""
