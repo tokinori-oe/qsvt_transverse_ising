@@ -274,7 +274,7 @@ def TransformEigenValueToCosOfChebyShev(epsilon: float, eig_value: float, time: 
         np.e * np.abs(time) / (2 * r))**r - (5 / 4) * epsilon, time)[0]
     R = np.floor(r / 2).astype(int)
     R = max(R, 1)
-    for k in range(1, R):
+    for k in range(1, R+1):
         TransformedEigenValue += 2 * ( pow(-1, k) * scipy.special.jv(2 * k, time) *
                                     np.polynomial.chebyshev.chebval(eig_value, [0] * (2 * k) + [1]))
     return TransformedEigenValue
@@ -292,10 +292,13 @@ def TransformMatrixToCosOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
     """
     TransformedMatrix = np.zeros(encoded_matrix.shape)
     eig_values, eig_vecs = LA.eig(encoded_matrix)
-        
-    for eig_i, eig_value in enumerate(eig_values):
-        TransformedMatrix += TransformEigenValueToCosOfChebyShev(epsilon, eig_value, time) * np.dot(eig_vecs[eig_i].T, eig_vecs[eig_i])
-            
+    
+    transformed_eig_values = np.array([TransformEigenValueToCosOfChebyShev(epsilon, eig_value, time) for eig_value in eig_values])
+    diagonal_matrix = np.diag(transformed_eig_values)
+    print(eig_values)
+    print(transformed_eig_values)
+    TransformedMatrix = eig_vecs @ diagonal_matrix @ eig_vecs.T
+    
     return TransformedMatrix
             
 def TransformEigenValueToSinOfChebyShev(epsilon: float, eig_value: float, time: float) ->float:
@@ -424,9 +427,26 @@ def test_QSVTAndMinusISinOfChebyshev(NumOfSite: int, ValueOfH: float, time: floa
     answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = TransformMatrixToSinOfChebyShev(epsilon, answer, time)
-    answer *= -1j
+    answer *= answer * -1j
     #testする
     assert(np.allclose(answer, encoded_matrix))
     
 def test_ExpOverTwo():
     pass
+
+"""
+def main():
+    NumOfSite = 2
+    ValueOfH = 1.0
+    epsilon = 0.1
+    time = 1.0
+    var_of_system = setting_var_of_system(NumOfSite, ValueOfH)
+    answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    print(answer)
+    answer = TransformMatrixToCosOfChebyShev(epsilon, answer, time)
+    print(answer)
+    
+if __name__ == '__main__':
+    main()
+"""

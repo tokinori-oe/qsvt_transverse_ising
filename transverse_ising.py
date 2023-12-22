@@ -260,7 +260,7 @@ def PhaseShiftOperation(var_of_system: VarOfSystem, controlled_state: int, ang: 
     
     return phaseshiftgate
 
-def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq_for_cos: list[float]) -> Gate:
+def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq: list[float]) -> Gate:
     """一つのancillaにコントロールされたU_phiのGateを作る
         
     Keyword arguments:
@@ -273,22 +273,22 @@ def Construct_U_phi(var_of_system: VarOfSystem, controlled_state: int, ang_seq_f
     NumOfGateForUphi = var_of_system.NumOfGateForEncoding + 1
     qc = QuantumCircuit(NumOfGateForUphi)
         
-    if len(ang_seq_for_cos) % 2 == 0:
-        for ang_i, ang in enumerate(ang_seq_for_cos[:-1]):
+    if len(ang_seq) % 2 == 0:
+        for ang_i, ang in enumerate(ang_seq[:-1]):
             qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             if ang_i == 0:
                 qc.append(EncodingHamiltonian(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
             else:
                 qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
-        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq_for_cos[len(ang_seq_for_cos) - 1]), list(range(NumOfGateForUphi)))
+        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq[len(ang_seq) - 1]), list(range(NumOfGateForUphi)))
     else:
-        for ang_i, ang in enumerate(ang_seq_for_cos):
+        for ang_i, ang in enumerate(ang_seq):
             qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang), list(range(NumOfGateForUphi)))
             if ang_i == 0:
                 qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
             else:
                 qc.append(EncodingHamiltonian(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
-        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq_for_cos[len(ang_seq_for_cos) - 1]), list(range(NumOfGateForUphi)))
+        qc.append(PhaseShiftOperation(var_of_system, controlled_state, ang_seq[len(ang_seq) - 1]), list(range(NumOfGateForUphi)))
     Ugate = qc.to_gate().control(1)
         
     return Ugate  
