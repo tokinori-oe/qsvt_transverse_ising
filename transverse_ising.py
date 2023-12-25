@@ -152,7 +152,10 @@ def qc_controlledSx(U_i: int, var_of_system: VarOfSystem) -> Gate:
     return controlled_Sx
 
 def EncodingHamiltonian(var_of_system: VarOfSystem) -> Gate:
-    """HamiltonianをUnitary matrixにencodeする"""
+    """HamiltonianをUnitary matrixにencodeする
+    
+    ancillaは下のNumOfAncillaForEncoding個だけある
+    """
 
     HamiltonianEncodedGate = QuantumCircuit(var_of_system.NumOfGateForEncoding)
     #encoding hamiltonian
@@ -195,7 +198,7 @@ def AngListForCos(var_of_system: VarOfSystem, time: float, epsilon: float) -> li
     poly = TargetPolynomial(coef_cos)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
     ang_seq = [ang for sublist in ang_seq for ang in sublist]
-    ang_seq = [ang - (np.pi/4) if (ang_i == 0 or ang_i == len(ang_seq) - 1) else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq)]
+    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq[:-1])]
     
     return ang_seq
 
@@ -215,8 +218,7 @@ def AngListForSine(var_of_system: VarOfSystem, time: float, epsilon: float) -> l
     poly = TargetPolynomial(coef_sin)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
     ang_seq = [ang for sublist in ang_seq for ang in sublist]
-    ang_seq = [ang - (np.pi/4) if (ang_i == 0 or ang_i == len(ang_seq) - 1) else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq)]
-    
+    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq[:-1])]    
     return ang_seq
 
 
