@@ -104,7 +104,7 @@ def test_Encoding(NumOfSite, ValueOfH):
     #When   hamiltonianをencodingする
     qc = QuantumCircuit(var_of_system.NumOfGateForEncoding)
     qc.append(EncodingHamiltonian(var_of_system), list(range(var_of_system.NumOfGateForEncoding)))
-    #測定d
+    #測定
     backend = Aer.get_backend('unitary_simulator')
     job = execute(qc, backend)
     result = job.result()
@@ -112,9 +112,8 @@ def test_Encoding(NumOfSite, ValueOfH):
 
     encoded_matrix = whole_matrix[:pow(2,var_of_system.NumOfSite), :pow(2, var_of_system.NumOfSite)]
     encoded_matrix = encoded_matrix.T
-    encoded_matrix *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+    encoded_matrix *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) +
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
-        
     #Then   比較する,  answerとencoded_matrixの差がIdentity_matrixの倍だったらTrueになるようにする
     answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
@@ -258,7 +257,7 @@ def test_Identity():
     answer = sum(Identity_matrixFortest(var_of_system) for _ in range(var_of_system.NumOfSite * 2))
     assert np.allclose(encoded_matrix, answer)
     
-def TransformEigenValueToCosOfChebyShev(epsilon: float, eig_value: float, time: float) -> float:
+def TransformEigenValueToCosOfChebyShev(var_of_system: VarOfSystem, epsilon: float, eig_value: float, time: float) -> float:
     """cosをchebyshev級数展開した多項式を出力する
     
     Keyword arguments:
@@ -269,6 +268,10 @@ def TransformEigenValueToCosOfChebyShev(epsilon: float, eig_value: float, time: 
     Returns:
     cosをchebyshev級数展開した多項式にeig_valueとtimeを代入した値
     """
+    time *= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+                    (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
+    eig_value /= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+                    (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     TransformedEigenValue = scipy.special.jv(0, time)
     r = scipy.optimize.fsolve(lambda r: (
         np.e * np.abs(time) / (2 * r))**r - (5 / 4) * epsilon, time)[0]
@@ -279,7 +282,7 @@ def TransformEigenValueToCosOfChebyShev(epsilon: float, eig_value: float, time: 
                                     np.polynomial.chebyshev.chebval(eig_value, [0] * (2 * k) + [1]))
     return TransformedEigenValue
     
-def TransformMatrixToCosOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, time: float) -> np.ndarray:
+def TransformMatrixToCosOfChebyShev(var_of_system: VarOfSystem, epsilon: float, encoded_matrix: np.ndarray, time: float) -> np.ndarray:
     """matrixの固有値をcosをchebyshev級数展開した多項式に変換する
     
     Keyword arguments:
@@ -293,7 +296,7 @@ def TransformMatrixToCosOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
     TransformedMatrix = np.zeros(encoded_matrix.shape)
     eig_values, eig_vecs = LA.eig(encoded_matrix)
     
-    transformed_eig_values = np.array([TransformEigenValueToCosOfChebyShev(epsilon, eig_value, time) for eig_value in eig_values])
+    transformed_eig_values = np.array([TransformEigenValueToCosOfChebyShev(var_of_system, epsilon, eig_value, time) for eig_value in eig_values])
     diagonal_matrix = np.diag(transformed_eig_values)
     #print(eig_values)
     #print(transformed_eig_values)
@@ -381,7 +384,7 @@ def test_QSVTAndCosOfChebyshev(NumOfSite: int, ValueOfH: float, time: float, eps
     #answerのmatrixを作成する
     answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
-    answer = TransformMatrixToCosOfChebyShev(epsilon, answer, time)
+    answer = TransformMatrixToCosOfChebyShev(var_of_system, epsilon, answer, time)
     #testする
     assert(np.allclose(answer, encoded_matrix))
     
