@@ -275,7 +275,7 @@ def TransformEigenValueToCosOfChebyShev(epsilon: float, eig_value: float, time: 
     R = np.floor(r / 2).astype(int)
     R = max(R, 1)
     for k in range(1, R+1):
-        TransformedEigenValue += 2 * ( pow(-1, k) * scipy.special.jv(2 * k, time) *
+        TransformedEigenValue += 2 * ( pow(-1, k) * scipy.special.jv(2 * k, time) * \
                                     np.polynomial.chebyshev.chebval(eig_value, [0] * (2 * k) + [1]))
     return TransformedEigenValue
     
@@ -318,7 +318,7 @@ def TransformEigenValueToSinOfChebyShev(epsilon: float, eig_value: float, time: 
     R = np.floor(r / 2).astype(int)
     R = max(R, 1)
     for k in range(1, R):
-        TransformedEigenValue += 2 * ( pow(-1, k) * scipy.special.jv(2 * k + 1, time) *
+        TransformedEigenValue += 2 * ( pow(-1, k) * scipy.special.jv(2 * k + 1, time) * \
                                     np.polynomial.chebyshev.chebval(eig_value, [0] * (2 * k + 1) + [1]))
     return TransformedEigenValue
         

@@ -198,7 +198,7 @@ def AngListForCos(var_of_system: VarOfSystem, time: float, epsilon: float) -> li
     poly = TargetPolynomial(coef_cos)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
     ang_seq = [ang for sublist in ang_seq for ang in sublist]
-    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq[:-1])]
+    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang_i, ang in enumerate(ang_seq[:-1])]
     
     return ang_seq
 
@@ -218,7 +218,7 @@ def AngListForSine(var_of_system: VarOfSystem, time: float, epsilon: float) -> l
     poly = TargetPolynomial(coef_sin)
     ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
     ang_seq = [ang for sublist in ang_seq for ang in sublist]
-    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang, ang_i in enumerate(ang_seq[:-1])]    
+    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang_i, ang in enumerate(ang_seq[:-1])]    
     return ang_seq
 
 
@@ -313,10 +313,10 @@ def CosGate(var_of_system: VarOfSystem, ang_seq_for_cos: list[float]) -> Gate:
     qc = QuantumCircuit(NumOfGateForCosGate)
     qc.h(NumOfGateForCosGate - 1)
     #|0><0|×U_Φ
-    qc.append(Construct_U_phi(var_of_system, 0, ang_seq_for_cos), list(range(NumOfGateForCosGate)))
+    qc.append(Construct_U_phi(var_of_system, 0, ang_seq_for_cos), [NumOfGateForCosGate - 1] + list(range(NumOfGateForCosGate - 1))) 
     #|1><1|×U_-Φ
     qc.x(NumOfGateForCosGate - 1)
-    qc.append(Construct_U_phi(var_of_system, 1, ang_seq_for_cos), list(range(NumOfGateForCosGate)))
+    qc.append(Construct_U_phi(var_of_system, 1, ang_seq_for_cos), [NumOfGateForCosGate - 1] + list(range(NumOfGateForCosGate - 1))) 
     qc.x(NumOfGateForCosGate - 1)
     
     qc.h(NumOfGateForCosGate - 1)
@@ -346,10 +346,10 @@ def SinGate(var_of_system: VarOfSystem, ang_seq_for_sin: list[int]) -> Gate:
     qc = QuantumCircuit(NumOfGateForSinGate)
     qc.h(NumOfGateForSinGate - 1)
     #|0><0|×U_Φ
-    qc.append(Construct_U_phi(var_of_system, 0, ang_seq_for_sin), list(range(NumOfGateForSinGate)))
+    qc.append(Construct_U_phi(var_of_system, 0, ang_seq_for_sin), [NumOfGateForSinGate - 1] + list(range(NumOfGateForSinGate - 1)))
     #|1><1|×U_-Φ
     qc.x(NumOfGateForSinGate - 1)
-    qc.append(Construct_U_phi(var_of_system, 1, ang_seq_for_sin), list(range(NumOfGateForSinGate)))
+    qc.append(Construct_U_phi(var_of_system, 1, ang_seq_for_sin), [NumOfGateForSinGate - 1] + list(range(NumOfGateForSinGate - 1)))
     qc.x(NumOfGateForSinGate - 1)
     
     qc.h(NumOfGateForSinGate - 1)
@@ -377,9 +377,11 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
     qc.h(NumOfGateForExpOverTwoGate - 1)
     #CosGate
     #CosGateのancillaは3つだから違う,SinGateも同様に違う
+    #ここ訂正する
     qc.append(ControlledCosGate(var_of_system, ang_seq_for_cos), list(range(var_of_system.NumOfGateForEncoding + 2)) + [NumOfGateForExpOverTwoGate - 1])
     #SinGate(-isinをEncodingする)
     qc.x(NumOfGateForExpOverTwoGate - 1)
+    #ここ訂正する
     qc.append(ControlledSinGate(var_of_system, ang_seq_for_sin), list(range(var_of_system.NumOfGateForEncoding)) +
               list(range(var_of_system.NumOfGateForEncoding + 2, var_of_system.NumOfGateForEncoding + 4)) + [NumOfGateForExpOverTwoGate - 1])
     qc.x(NumOfGateForExpOverTwoGate - 1)
