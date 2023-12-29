@@ -1,5 +1,6 @@
-from transverse_ising import AngListForCos, AngListForSine
 import numpy as np
+from pyqsp.angle_sequence import QuantumSignalProcessingPhases
+from pyqsp.poly import PolyCosineTX, PolySineTX, TargetPolynomial
 
 #import qiskit
 from qiskit import IBMQ, Aer, transpile, execute
@@ -9,6 +10,32 @@ from qiskit.circuit.gate import Gate
 
 from qiskit.visualization import plot_histogram
 import matplotlib.pyplot as plt
+
+def AngListForCosInQSP(time: float, epsilon: float) -> list[float]:
+    """QSPでcosの近似多項式を作るための角度のリストを作る"""
+    coef_cos = PolyCosineTX().generate(tau = time, epsilon = epsilon)
+    poly = TargetPolynomial(coef_cos)
+    ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
+    ang_seq = [ang for sublist in ang_seq for ang in sublist]
+    
+    return ang_seq
+
+def AngListForSineInQSP(time: float, epsilon: float) -> list[float]:
+    """QSPでsinの近似多項式を作るための角度のリストを作る"""
+    coef_sin = PolySineTX().generate(tau = time, epsilon = epsilon)
+    poly = TargetPolynomial(coef_sin)
+    ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
+    ang_seq = [ang for sublist in ang_seq for ang in sublist]
+    
+    return ang_seq
+
+def TransformIntoCosOfChebyshev(time: float, epsilon: float, var_list: list[float]) -> list[float]:
+    """Cosをチェビシェフ級数展開した多項式の値のリストを出力する"""
+    pass
+
+def TransformIntoSineOfChebyshev(time: float, epsilon: float, var_list: list[float]) -> list[float]:
+    """Sineをチェビシェフ級数展開した多項式の値のリストを出力する"""
+    pass
 
 def QSPGateForCos(time: float, epsilon: float, theta: float) -> Gate:
     """AngListForCosから出力した角度を用いたQSPのx回転とz回転の交互配置のGateを作る
@@ -21,7 +48,7 @@ def QSPGateForCos(time: float, epsilon: float, theta: float) -> Gate:
     """
     
     qc = QuantumCircuit(1)
-    ang_list = AngListForCos(time, epsilon)
+    ang_list = AngListForCosInQSP(time, epsilon)
     #print(ang_list)
     for ang in ang_list[:-1]:
         qc.rz(-2 * ang, 0)
@@ -42,7 +69,7 @@ def QSPGateForSine(time: float, epsilon: float, theta: float)-> Gate:
     """
     
     qc = QuantumCircuit(1)
-    ang_list = AngListForSine(time , epsilon)
+    ang_list = AngListForSineInQSP(time , epsilon)
     for ang in ang_list[:-1]:
         qc.rz(-2 * ang, 0)
         qc.rx(theta, 0)
@@ -54,7 +81,7 @@ def QSPGateForSine(time: float, epsilon: float, theta: float)-> Gate:
 
 def main():
     time = 10.
-    epsilon = 0.1
+    epsilon = 0.01
     a_list = np.linspace(0,0.5,10)
     theta_list = [-2 * np.arccos(element) for element in a_list]
     

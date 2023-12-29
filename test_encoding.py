@@ -347,7 +347,7 @@ def TransformMatrixToSinOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
 @pytest.mark.parametrize(
     "NumOfSite, ValueOfH, time, epsilon",
     [
-        (pow(2,1), 1.0, 1.0, 0.01),
+        (pow(2,1), 1.0, 1.0, 0.001),
         (pow(2,2), 1.0, 1.0, 0.02),
         (pow(2,3), 1.0, 1.0, 0.01),
         (pow(2,1), 2.0, 1.0, 0.02),
