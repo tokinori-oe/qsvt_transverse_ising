@@ -45,9 +45,9 @@ def TransformIntoCosOfChebyshev(time: float, epsilon: float, x_list: list[float]
         np.e * np.abs(time) / (2 * r))**r - (5 / 4) * epsilon, time)[0]
     R = np.floor(r / 2).astype(int)
     R = max(R, 1)
-    TransformedValue = scipy.special.jv(0, time)
     answer_list = []
     for x in x_list:
+        TransformedValue = scipy.special.jv(0, time) * np.polynomial.chebyshev.chebval(x, [1])
         for k in range(1, R+1):
             TransformedValue += 2 * ( pow(-1, k) * scipy.special.jv(2 * k, time) * \
                                     np.polynomial.chebyshev.chebval(x, [0] * (2 * k) + [1]))
@@ -122,7 +122,7 @@ def QSPGateForSine(time: float, epsilon: float, theta: float)-> Gate:
 
 def main():
     time = 10.
-    epsilon = 0.01
+    epsilon = 0.02
     a_list = np.linspace(0,0.5,10)
     theta_list = [-2 * np.arccos(element) for element in a_list]
     
@@ -142,8 +142,12 @@ def main():
         finalresult.append(result.get_statevector(main_qc)[0])
     
     #プロット
+    chebyshev_value_list = TransformIntoCosOfChebyshev(time, epsilon, a_list)
     plt.plot(a_list, finalresult, "o")
-    plt.plost(a_list, TransformIntoCosOfChebyshev(time, epsilon, a_list))
+    plt.plot(a_list, chebyshev_value_list, "o")
+    print(finalresult)
+    print(chebyshev_value_list)
+    print([abs(value1 - value2) for value1, value2 in zip(chebyshev_value_list, finalresult)])
     plt.show()
 
 

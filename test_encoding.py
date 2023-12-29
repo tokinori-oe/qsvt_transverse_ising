@@ -272,7 +272,7 @@ def TransformEigenValueToCosOfChebyShev(var_of_system: VarOfSystem, epsilon: flo
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     eig_value /= (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
-    TransformedEigenValue = scipy.special.jv(0, time)
+    TransformedEigenValue = scipy.special.jv(0, time) * np.polynomial.chebyshev.chebval(eig_value, [1])
     r = scipy.optimize.fsolve(lambda r: (
         np.e * np.abs(time) / (2 * r))**r - (5 / 4) * epsilon, time)[0]
     R = np.floor(r / 2).astype(int)
@@ -347,6 +347,7 @@ def TransformMatrixToSinOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
 @pytest.mark.parametrize(
     "NumOfSite, ValueOfH, time, epsilon",
     [
+        (pow(2,1), 1.0, 10, 0.01),
         (pow(2,1), 1.0, 1.0, 0.001),
         (pow(2,2), 1.0, 1.0, 0.02),
         (pow(2,3), 1.0, 1.0, 0.01),
