@@ -348,7 +348,7 @@ def TransformMatrixToSinOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
 @pytest.mark.parametrize(
     "NumOfSite, ValueOfH, time, epsilon",
     [
-        (pow(2,1), 1.0, 10.0, 0.01),
+        (pow(2,1), 1.0, 1.0, 0.01),
         (pow(2,1), 1.0, 5.0, 0.01),
         (pow(2,1), 1.0, 1.0, 0.001),
         (pow(2,2), 1.0, 1.0, 0.02),
@@ -395,7 +395,7 @@ def test_QSVTAndCosOfChebyshev(NumOfSite: int, ValueOfH: float, time: float, eps
     "NumOfSite, ValueOfH, time, epsilon",
     [
         (pow(2,1), 1.0, 10.0, 0.01),
-        (pow(2,1), 1.0, 5.0, 0.01),
+        (pow(2,1), 1.0, 1.0, 0.01),
         (pow(2,1), 1.0, 1.0, 0.001),
         (pow(2,2), 1.0, 1.0, 0.02),
         (pow(2,3), 1.0, 1.0, 0.01),
@@ -511,18 +511,19 @@ def main():
     whole_matrix =np.array(result.get_unitary(qc))
     encoded_matrix = whole_matrix[:pow(2,var_of_system.NumOfSite), :pow(2, var_of_system.NumOfSite)]
     encoded_matrix = encoded_matrix.T
+    eig_values_of_encoded_matrix, eig_vecs_of_encoded_matrix = LA.eig(encoded_matrix)
+
     #answerのmatrixを作成する
     answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = TransformMatrixToCosOfChebyShev(var_of_system, epsilon, answer, time)
     eig_values_of_answer, eig_vecs_of_answer = LA.eig(answer)
-    eig_values_of_encoded_matrix, eig_vecs_of_encoded_matrix = LA.eig(encoded_matrix)
     
     #QSP
     #イジングモデルのハミルトニアンを作成して固有値を求める
-    answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
-    answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
-    eig_values_of_answer = LA.eig(answer)[0].tolist()
+    hamiltonian = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    hamiltonian = hamiltonian + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    eig_values_of_answer = LA.eig(hamiltonian)[0].tolist()
     const = (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     eig_values_of_answer = np.array([eig_value / const for eig_value in eig_values_of_answer])
@@ -533,6 +534,8 @@ def main():
     
     print(eig_values_of_answer)
     print(eig_values_of_encoded_matrix)
+    #print(encoded_matrix)
+    #print(answer)
     print(cos_qsp_value)
     
 if __name__ == '__main__':
