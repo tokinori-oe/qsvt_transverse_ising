@@ -1,6 +1,7 @@
 import pytest
 from transverse_ising import VarOfSystem, CheckLessThan2ToTheN, EncodingHamiltonian, qc_controlledSS, qc_controlledSx, construct_G
 from transverse_ising import CosGate, SinGate, AngListForCos, AngListForSine
+from check_plot import TransformIntoCosOfChebyshev
 import numpy as np
 import numpy.linalg as LA
 import scipy.special
@@ -347,7 +348,8 @@ def TransformMatrixToSinOfChebyShev(epsilon: float, encoded_matrix: np.ndarray, 
 @pytest.mark.parametrize(
     "NumOfSite, ValueOfH, time, epsilon",
     [
-        (pow(2,1), 1.0, 10, 0.01),
+        (pow(2,1), 1.0, 10.0, 0.01),
+        (pow(2,1), 1.0, 5.0, 0.01),
         (pow(2,1), 1.0, 1.0, 0.001),
         (pow(2,2), 1.0, 1.0, 0.02),
         (pow(2,3), 1.0, 1.0, 0.01),
@@ -388,6 +390,60 @@ def test_QSVTAndCosOfChebyshev(NumOfSite: int, ValueOfH: float, time: float, eps
     answer = TransformMatrixToCosOfChebyShev(var_of_system, epsilon, answer, time)
     #testする
     assert(np.allclose(answer, encoded_matrix))
+
+@pytest.mark.parametrize(
+    "NumOfSite, ValueOfH, time, epsilon",
+    [
+        (pow(2,1), 1.0, 10.0, 0.01),
+        (pow(2,1), 1.0, 5.0, 0.01),
+        (pow(2,1), 1.0, 1.0, 0.001),
+        (pow(2,2), 1.0, 1.0, 0.02),
+        (pow(2,3), 1.0, 1.0, 0.01),
+        (pow(2,1), 2.0, 1.0, 0.02),
+        (pow(2,2), 2.0, 1.0, 0.01),
+        (pow(2,3), 2.0, 1.0, 0.01),
+        (pow(2,1), 3.0, 1.0, 0.01),
+        (pow(2,2), 3.0, 1.0, 0.01),
+        (3, 1.0, 1.0, 0.01),
+        (5, 1.0, 1.0, 0.01),
+        (6, 1.0, 1.0, 0.01),
+        (7, 1.0, 1.0, 0.01),
+        (3, 2.0, 1.0, 0.01),
+        (5, 2.0, 1.0, 0.01),
+        (6, 2.0, 1.0, 0.01),
+        (7, 2.0, 1.0, 0.01),
+    ],
+)
+def test_QSPAndQSVTAboutCos(NumOfSite: int, ValueOfH: float, time: float, epsilon: float):
+    """QSPで求めた多項式の値とQSVTで変形した固有値の値を比較する関数"""
+    #QSVT
+    var_of_system = setting_var_of_system(NumOfSite, ValueOfH)
+    NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
+    qc = QuantumCircuit(NumOfGateForTestCos)
+    
+    qc.append(CosGate(var_of_system, AngListForCos(var_of_system, time, epsilon)), list(range(NumOfGateForTestCos)))
+    backend = Aer.get_backend('unitary_simulator')
+    job = execute(qc, backend)
+    result = job.result()
+    whole_matrix =np.array(result.get_unitary(qc))
+    encoded_matrix = whole_matrix[:pow(2,var_of_system.NumOfSite), :pow(2, var_of_system.NumOfSite)]
+    encoded_matrix = encoded_matrix.T
+    cos_qsvt_value = LA.eig(encoded_matrix)[0]
+    
+    #イジングモデルのハミルトニアンを作成して固有値を求める
+    answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    eig_values_of_answer = LA.eig(answer)[0].tolist()
+    const = (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+                    (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
+    eig_values_of_answer = np.array([eig_value / const for eig_value in eig_values_of_answer])
+    time *=  const
+    #固有値を使ってQSPを実行する
+    cos_qsp_value = TransformIntoCosOfChebyshev(time, epsilon, eig_values_of_answer)
+    cos_qsp_value = np.array(cos_qsp_value)
+    
+    assert(np.allclose(cos_qsvt_value, cos_qsp_value))
+    
     
 @pytest.mark.parametrize(
     "NumOfSite, ValueOfH, time, epsilon",
@@ -442,14 +498,42 @@ def test_ExpOverTwo():
 def main():
     NumOfSite = 2
     ValueOfH = 1.0
-    epsilon = 0.1
+    epsilon = 0.01
     time = 1.0
     var_of_system = setting_var_of_system(NumOfSite, ValueOfH)
+    NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
+    qc = QuantumCircuit(NumOfGateForTestCos)
+    
+    qc.append(CosGate(var_of_system, AngListForCos(var_of_system, time, epsilon)), list(range(NumOfGateForTestCos)))
+    backend = Aer.get_backend('unitary_simulator')
+    job = execute(qc, backend)
+    result = job.result()
+    whole_matrix =np.array(result.get_unitary(qc))
+    encoded_matrix = whole_matrix[:pow(2,var_of_system.NumOfSite), :pow(2, var_of_system.NumOfSite)]
+    encoded_matrix = encoded_matrix.T
+    #answerのmatrixを作成する
     answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
-    print(answer)
-    answer = TransformMatrixToCosOfChebyShev(epsilon, answer, time)
-    print(answer)
+    answer = TransformMatrixToCosOfChebyShev(var_of_system, epsilon, answer, time)
+    eig_values_of_answer, eig_vecs_of_answer = LA.eig(answer)
+    eig_values_of_encoded_matrix, eig_vecs_of_encoded_matrix = LA.eig(encoded_matrix)
+    
+    #QSP
+    #イジングモデルのハミルトニアンを作成して固有値を求める
+    answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
+    eig_values_of_answer = LA.eig(answer)[0].tolist()
+    const = (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
+                    (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
+    eig_values_of_answer = np.array([eig_value / const for eig_value in eig_values_of_answer])
+    time *=  const
+    #固有値を使ってQSPを実行する
+    cos_qsp_value = TransformIntoCosOfChebyshev(time, epsilon, eig_values_of_answer)
+    cos_qsp_value = np.array(cos_qsp_value)
+    
+    print(eig_values_of_answer)
+    print(eig_values_of_encoded_matrix)
+    print(cos_qsp_value)
     
 if __name__ == '__main__':
     main()
