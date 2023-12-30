@@ -1,7 +1,7 @@
 import pytest
 from transverse_ising import VarOfSystem, CheckLessThan2ToTheN, EncodingHamiltonian, qc_controlledSS, qc_controlledSx, construct_G
 from transverse_ising import CosGate, SinGate, AngListForCos, AngListForSine
-from check_plot import TransformIntoCosOfChebyshev
+from check_plot import TransformIntoCosOfChebyshev, QSPGateForCos
 import numpy as np
 import numpy.linalg as LA
 import scipy.special
@@ -531,8 +531,19 @@ def main():
     time *=  const
     
     #固有値を使ってQSPを実行する
-    cos_qsp_value = TransformIntoCosOfChebyshev(time, epsilon, eig_values_of_hamiltonian)
-    cos_qsp_value = np.array(cos_qsp_value)
+    cos_qsp_value = ([])
+    print(eig_values_of_hamiltonian)
+    for eig_value in eig_values_of_hamiltonian:
+        qsp_qc = QuantumCircuit(1)
+        qsp_qc.h(0)
+        qsp_qc.append(QSPGateForCos(time, epsilon, eig_value), [0])
+        qsp_qc.h(0)
+        #計測
+        
+        backend = Aer.get_backend('statevector_simulator')
+        job = execute(qsp_qc, backend)
+        result = job.result()
+        cos_qsp_value.append(result.get_statevector(qsp_qc)[0])
     
     print(eig_values_of_answer)
     print(eig_values_of_encoded_matrix)
