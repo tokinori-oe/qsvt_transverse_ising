@@ -303,7 +303,6 @@ def TransformMatrixToCosOfChebyShev(var_of_system: VarOfSystem, epsilon: float, 
     #print(eig_values)
     #print(transformed_eig_values)
     TransformedMatrix = eig_vecs @ diagonal_matrix @ eig_vecs.T
-    print(LA.eig(TransformedMatrix)[0])
     
     return TransformedMatrix
             
@@ -530,11 +529,12 @@ def main():
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     eig_values_of_hamiltonian = np.array([eig_value / const for eig_value in eig_values_of_hamiltonian])
     time *=  const
+    
     #固有値を使ってQSPを実行する
     cos_qsp_value = TransformIntoCosOfChebyshev(time, epsilon, eig_values_of_hamiltonian)
     cos_qsp_value = np.array(cos_qsp_value)
     
-    print(f'answer is {eig_values_of_answer}')
+    print(eig_values_of_answer)
     print(eig_values_of_encoded_matrix)
     #print(encoded_matrix)
     #print(answer)
