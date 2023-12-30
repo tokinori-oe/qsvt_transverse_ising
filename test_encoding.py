@@ -298,10 +298,12 @@ def TransformMatrixToCosOfChebyShev(var_of_system: VarOfSystem, epsilon: float, 
     eig_values, eig_vecs = LA.eig(encoded_matrix)
     
     transformed_eig_values = np.array([TransformEigenValueToCosOfChebyShev(var_of_system, epsilon, eig_value, time) for eig_value in eig_values])
+    
     diagonal_matrix = np.diag(transformed_eig_values)
     #print(eig_values)
     #print(transformed_eig_values)
     TransformedMatrix = eig_vecs @ diagonal_matrix @ eig_vecs.T
+    print(LA.eig(TransformedMatrix)[0])
     
     return TransformedMatrix
             
@@ -499,7 +501,7 @@ def main():
     NumOfSite = 2
     ValueOfH = 1.0
     epsilon = 0.01
-    time = 1.0
+    time = 5.0
     var_of_system = setting_var_of_system(NumOfSite, ValueOfH)
     NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
     qc = QuantumCircuit(NumOfGateForTestCos)
@@ -517,22 +519,22 @@ def main():
     answer = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = answer + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     answer = TransformMatrixToCosOfChebyShev(var_of_system, epsilon, answer, time)
-    eig_values_of_answer, eig_vecs_of_answer = LA.eig(answer)
+    eig_values_of_answer = LA.eig(answer)[0]
     
     #QSP
     #イジングモデルのハミルトニアンを作成して固有値を求める
     hamiltonian = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     hamiltonian = hamiltonian + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
-    eig_values_of_answer = LA.eig(hamiltonian)[0].tolist()
+    eig_values_of_hamiltonian = LA.eig(hamiltonian)[0].tolist()
     const = (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
-    eig_values_of_answer = np.array([eig_value / const for eig_value in eig_values_of_answer])
+    eig_values_of_hamiltonian = np.array([eig_value / const for eig_value in eig_values_of_hamiltonian])
     time *=  const
     #固有値を使ってQSPを実行する
-    cos_qsp_value = TransformIntoCosOfChebyshev(time, epsilon, eig_values_of_answer)
+    cos_qsp_value = TransformIntoCosOfChebyshev(time, epsilon, eig_values_of_hamiltonian)
     cos_qsp_value = np.array(cos_qsp_value)
     
-    print(eig_values_of_answer)
+    print(f'answer is {eig_values_of_answer}')
     print(eig_values_of_encoded_matrix)
     #print(encoded_matrix)
     #print(answer)
