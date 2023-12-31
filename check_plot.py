@@ -121,9 +121,10 @@ def QSPGateForSine(time: float, epsilon: float, theta: float)-> Gate:
 
 
 def main():
-    time = 1.0
-    epsilon = 0.02
+    time = 4.0
+    epsilon = 0.01
     a_list = np.linspace(0,1.0,10)
+    a_list = [0.5, 0.70710678]
     theta_list = [-2 * np.arccos(element) for element in a_list]
     
     finalresult =([])

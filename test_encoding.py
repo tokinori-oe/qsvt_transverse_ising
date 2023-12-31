@@ -530,14 +530,13 @@ def main():
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     eig_values_of_hamiltonian = np.array([eig_value / const for eig_value in eig_values_of_hamiltonian])
     time *=  const
-    
     #固有値を使ってQSPを実行する
     cos_qsp_value = ([])
-    print(eig_values_of_hamiltonian)
-    for eig_value in eig_values_of_hamiltonian:
+    theta_list = [-2 * np.arccos(element) for element in eig_values_of_hamiltonian]
+    for theta in theta_list:
         qsp_qc = QuantumCircuit(1)
         qsp_qc.h(0)
-        qsp_qc.append(QSPGateForCos(time, epsilon, eig_value), [0])
+        qsp_qc.append(QSPGateForCos(time, epsilon, theta), [0])
         qsp_qc.h(0)
         #計測
         
@@ -546,7 +545,8 @@ def main():
         result = job.result()
         cos_qsp_value.append(result.get_statevector(qsp_qc)[0])
     
-
+    print(time)
+    print(eig_values_of_hamiltonian)
     print(cos_value)
     print(eig_values_of_answer)
     print(eig_values_of_encoded_matrix)
