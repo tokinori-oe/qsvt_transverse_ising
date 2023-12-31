@@ -500,7 +500,7 @@ def main():
     NumOfSite = 2
     ValueOfH = 1.0
     epsilon = 0.01
-    time = 5.0
+    time = 1.0
     var_of_system = setting_var_of_system(NumOfSite, ValueOfH)
     NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
     qc = QuantumCircuit(NumOfGateForTestCos)
@@ -525,6 +525,7 @@ def main():
     hamiltonian = sum(SSz_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     hamiltonian = hamiltonian + var_of_system.ValueOfH * sum(Sx_matrix(x, var_of_system) for x in range(var_of_system.NumOfSite))
     eig_values_of_hamiltonian = LA.eig(hamiltonian)[0].tolist()
+    cos_value = [np.cos(eig * 1.0) for eig in eig_values_of_hamiltonian]
     const = (var_of_system.NumOfSite * (1 + var_of_system.ValueOfH) + 
                     (pow(2, var_of_system.NumOfAncillaForEncoding) - var_of_system.NumOfUnitary) * ((1 + var_of_system.ValueOfH)/2))
     eig_values_of_hamiltonian = np.array([eig_value / const for eig_value in eig_values_of_hamiltonian])
@@ -545,6 +546,8 @@ def main():
         result = job.result()
         cos_qsp_value.append(result.get_statevector(qsp_qc)[0])
     
+
+    print(cos_value)
     print(eig_values_of_answer)
     print(eig_values_of_encoded_matrix)
     #print(encoded_matrix)
