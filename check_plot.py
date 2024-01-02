@@ -9,7 +9,6 @@ from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit.providers.ibmq import least_busy
 from qiskit.circuit.gate import Gate
 
-from qiskit.visualization import plot_histogram
 import matplotlib.pyplot as plt
 
 def AngListForCosInQSP(time: float, epsilon: float) -> list[float]:
@@ -123,11 +122,11 @@ def QSPGateForSine(time: float, epsilon: float, theta: float)-> Gate:
 def main():
     time = 4.0
     epsilon = 0.01
-    a_list = np.linspace(0,1.0,10)
-    a_list = [0.5, 0.70710678]
+    #a_list = np.linspace(0,1.0,10)
+    a_list = [0.5, -0.5]
     theta_list = [-2 * np.arccos(element) for element in a_list]
     
-    finalresult =([])
+    qsp_result =([])
     for theta in theta_list:    
         main_qc = QuantumCircuit(1)
     
@@ -140,15 +139,15 @@ def main():
         statevec_sim = Aer.get_backend('statevector_simulator')
         job = execute(main_qc, statevec_sim)
         result = job.result()
-        finalresult.append(result.get_statevector(main_qc)[0])
+        qsp_result.append(result.get_statevector(main_qc)[0])
     
     #プロット
     chebyshev_value_list = TransformIntoCosOfChebyshev(time, epsilon, a_list)
-    plt.plot(a_list, finalresult, "o")
+    plt.plot(a_list, qsp_result, "o")
     plt.plot(a_list, chebyshev_value_list, "o")
-    print(finalresult)
+    print(qsp_result)
     print(chebyshev_value_list)
-    print([abs(value1 - value2) for value1, value2 in zip(chebyshev_value_list, finalresult)])
+    print([abs(value1 - value2) for value1, value2 in zip(chebyshev_value_list, qsp_result)])
     plt.show()
 
 
