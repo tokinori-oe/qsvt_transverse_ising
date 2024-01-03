@@ -222,6 +222,14 @@ def AngListForSine(var_of_system: VarOfSystem, time: float, epsilon: float) -> l
     ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang_i, ang in enumerate(ang_seq[:-1])]    
     return ang_seq
 
+def AngListForT3() -> list[float]:
+    """チェビシェフ多項式T_3(x)の角度のリストを求める"""
+    coef_Tthree = [0, -3, 0, 4]
+    poly = TargetPolynomial(coef_Tthree)
+    ang_seq = QuantumSignalProcessingPhases(poly, method="tf")
+    ang_seq = [ang for sublist in ang_seq for ang in sublist]
+    ang_seq = [ang + ang_seq[len(ang_seq) - 1] + (np.pi * (len(ang_seq) - 2)/ 2) if ang_i == 0 else ang - (np.pi/2) for ang_i, ang in enumerate(ang_seq[:-1])]    
+    return ang_seq
 
 def projector(var_of_system: VarOfSystem) -> Gate:
     """1番下のancilla以外が左上のブロックを表す状態ならばそのancillaを反転させるようなGateを作る
@@ -376,13 +384,10 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
     qc = QuantumCircuit(NumOfGateForExpOverTwoGate)
     
     qc.h(NumOfGateForExpOverTwoGate - 1)
-    #CosGate
-    #CosGateのancillaは3つだから違う,SinGateも同様に違う
-    #ここ訂正する
+    #cosをEncodingする
     qc.append(ControlledCosGate(var_of_system, ang_seq_for_cos), list(range(var_of_system.NumOfGateForEncoding + 2)) + [NumOfGateForExpOverTwoGate - 1])
-    #SinGate(-isinをEncodingする)
+    #-isinをEncodingする
     qc.x(NumOfGateForExpOverTwoGate - 1)
-    #ここ訂正する
     qc.append(ControlledSinGate(var_of_system, ang_seq_for_sin), list(range(var_of_system.NumOfGateForEncoding)) +
               list(range(var_of_system.NumOfGateForEncoding + 2, var_of_system.NumOfGateForEncoding + 4)) + [NumOfGateForExpOverTwoGate - 1])
     qc.x(NumOfGateForExpOverTwoGate - 1)
@@ -392,7 +397,7 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
     exp_over_two_gate = qc.to_gate()
     return exp_over_two_gate
 
-def EncodingTimeEvolutionOperator(var_of_system: VarOfSystem, time: float, epsilon: float) -> Gate:
+def TimeEvolutionOperatorGate(var_of_system: VarOfSystem, time: float, epsilon: float) -> Gate:
     """exp(-iHt)をBlock Encodingする
     
     ancillaの上5つはexp(-iHt)/2を作るためのqubit
@@ -404,7 +409,7 @@ def EncodingTimeEvolutionOperator(var_of_system: VarOfSystem, time: float, epsil
     qc = QuantumCircuit(NumOfGateForEncodingTimeEvolutionOperator)
     
     #T_3(x)の角度を取得する
-    ang_seq_for_T3 = []
+    ang_seq_for_T3 = AngListForT3()
     
     ang_seq_for_cos = AngListForCos(var_of_system, time, epsilon)
     ang_seq_for_sin = AngListForSine(var_of_system, time, epsilon)
@@ -445,14 +450,8 @@ def main():
     epsilon = 0.01
     
     for time in time_list:
-        #cosとsinの関数に対応する角度を求める
-        ang_seq_for_cos = AngListForCos(var_of_system, time, epsilon)
-        ang_seq_for_sin = AngListForSine(var_of_system, time, epsilon)
-    
         #exp(-iHt)/2を作る
-        MainGate.append(ExpOverTwoGate(var_of_system, ang_seq_for_cos, ang_seq_for_sin), list(range(var_of_system.NumOfGate)))
-        
-        #exp(-iHt)をEncodingする
+        MainGate.append(TimeEvolutionOperatorGate(var_of_system, time, epsilon), list(range(var_of_system.NumOfGate)))
 
         #測定
         statevec_sim = Aer.get_backend('statevector_simulator')
