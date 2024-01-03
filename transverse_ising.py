@@ -41,6 +41,7 @@ class VarOfSystem(NamedTuple):
     NumOfGateForEncoding :int
     ValueOfH: float
     NumOfAncillaForPolynomial: int
+    NumOfAncillaForAmplification: int
     NumOfGate: int
 
 def CheckLessThan2ToTheN(N: int) -> int:
@@ -391,6 +392,33 @@ def ExpOverTwoGate(var_of_system: VarOfSystem, ang_seq_for_cos:list[float], ang_
     exp_over_two_gate = qc.to_gate()
     return exp_over_two_gate
 
+def EncodingTimeEvolutionOperator(var_of_system: VarOfSystem, time: float, epsilon: float) -> Gate:
+    """exp(-iHt)をBlock Encodingする
+    
+    ancillaの上5つはexp(-iHt)/2を作るためのqubit
+    最後の一つはexp(-iHt)/2からexp(-iHt)に増幅させるために使うqubits
+    """
+    NumOfGateForEncodingTimeEvolutionOperator = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial + \
+                                var_of_system.NumOfAncillaForAmplification
+    
+    qc = QuantumCircuit(NumOfGateForEncodingTimeEvolutionOperator)
+    
+    #T_3(x)の角度を取得する
+    ang_seq_for_T3 = []
+    
+    ang_seq_for_cos = AngListForCos(var_of_system, time, epsilon)
+    ang_seq_for_sin = AngListForSine(var_of_system, time, epsilon)
+    
+    #ang_listを使ってamplitude amplificationを実行する
+    for ang in ang_seq_for_T3:
+        qc.append(PhaseShiftOperation(var_of_system, 0, ang),
+            list(range(var_of_system.NumOfGateForEncoding)) + [NumOfGateForEncodingTimeEvolutionOperator - 1])
+        qc.append(ExpOverTwoGate(var_of_system, ang_seq_for_cos, ang_seq_for_sin), 
+              NumOfGateForEncodingTimeEvolutionOperator - 1)
+        
+    time_evolution_gate = qc.to_gate()
+    return time_evolution_gate
+    
 def main():
     #系の設定
     var_of_system = VarOfSystem
@@ -402,7 +430,9 @@ def main():
     var_of_system.NumOfAncillaForEncoding = CheckLessThan2ToTheN(var_of_system.NumOfUnitary)
     var_of_system.NumOfGateForEncoding = var_of_system.NumOfSite + var_of_system.NumOfAncillaForEncoding
     var_of_system.NumOfAncillaForPolynomial = 5
-    var_of_system.NumOfGate = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial
+    var_of_system.NumOfAncillaForAmplification = 1
+    var_of_system.NumOfGate = var_of_system.NumOfGateForEncoding + var_of_system.NumOfAncillaForPolynomial + \
+                                var_of_system.NumOfAncillaForAmplification 
     
     MainGate = QuantumCircuit(var_of_system.NumOfGate)
     
@@ -422,7 +452,7 @@ def main():
         #exp(-iHt)/2を作る
         MainGate.append(ExpOverTwoGate(var_of_system, ang_seq_for_cos, ang_seq_for_sin), list(range(var_of_system.NumOfGate)))
         
-        #exp(-iHt)に増幅させる
+        #exp(-iHt)をEncodingする
 
         #測定
         statevec_sim = Aer.get_backend('statevector_simulator')
