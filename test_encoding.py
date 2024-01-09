@@ -500,7 +500,7 @@ def main():
     NumOfSite = 2
     ValueOfH = 1.0
     epsilon = 0.01
-    time = 1.
+    time = 4.
     var_of_system = setting_var_of_system(NumOfSite, ValueOfH)
     NumOfGateForTestCos = var_of_system.NumOfGateForEncoding + 2
     qc = QuantumCircuit(NumOfGateForTestCos)
@@ -547,11 +547,15 @@ def main():
     
     #print(time)
     #print(eig_values_of_hamiltonian)
+    #hamiltonianの固有値を直接cosに変形した値
     print(cos_value)
+    #hamiltonianの固有値を直接cosの近似多項式に変形した値
     print(eig_values_of_answer)
+    #qsvtで変形したhamiltonianの固有値
     print(eig_values_of_encoded_matrix)
     #print(encoded_matrix)
     #print(answer)
+    #hamiltonianの固有値をqspで多項式変形した時の値
     print(cos_qsp_value)
     
 if __name__ == '__main__':

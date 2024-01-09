@@ -120,16 +120,16 @@ def QSPGateForSine(time: float, epsilon: float, theta: float)-> Gate:
 
 
 def main():
-    time = 4.0
+    time = 10.
     epsilon = 0.01
     #a_list = np.linspace(0,1.0,10)
     a_list = [0.5, -0.5]
     theta_list = [-2 * np.arccos(element) for element in a_list]
-    
+        
     qsp_result =([])
     for theta in theta_list:    
         main_qc = QuantumCircuit(1)
-    
+        
         main_qc.h(0)
         main_qc.append(QSPGateForCos(time, epsilon, theta), [0])
         #main_qc.append(QSPGateForSine(time, epsilon, theta), [0])

@@ -172,8 +172,6 @@ def EncodingHamiltonian(var_of_system: VarOfSystem) -> Gate:
         HamiltonianEncodedGate.append(qc_controlledSx(U_i, var_of_system), 
                         list(range(var_of_system.NumOfGateForEncoding)))
         
-    #transform H to exp(iH)
-    
     #implement an oracle
     HamiltonianEncodedGate.append(construct_G(var_of_system).inverse(), list(range(var_of_system.NumOfGateForEncoding)))
     
